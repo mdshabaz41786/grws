@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Success</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #28a745;
+      margin-bottom: 20px;
+    }
+    .summary p {
+      font-size: 16px;
+      margin: 6px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #f5f5f5;
+    }
+    .total {
+      font-weight: bold;
+      font-size: 18px;
+      text-align: right;
+      margin-top: 20px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 18px;
+      background-color: #007bff;
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      margin-top: 20px;
+    }
+    .btn:hover {
+      background-color: #0056b3;
+    }
+    .btn-success {
+      background-color: #28a745;
+    }
+    .btn-success:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>✅ Order Placed Successfully!</h2>
+
+    <div class="summary">
+      <p><strong>Order ID:</strong> {{ order.order_code }}</p>
+      <p><strong>Transaction ID:</strong> {{ order.transaction_id or 'N/A' }}</p>
+      <p><strong>Payment Mode:</strong> {{ order.payment_mode }}</p>
+      <p><strong>Status:</strong> {{ order.order_status }}</p>
+      <p><strong>Total Amount:</strong> ₹{{ order.total }}</p>
+      <p><strong>Order Date:</strong> {{ order.order_date }}</p>
+    </div>
+
+    <h3>🧾 Ordered Items</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Product Name</th>
+          <th>Qty</th>
+          <th>Price (₹)</th>
+          <th>Discount (%)</th>
+          <th>Total (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.product_name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.price }}</td>
+          <td>{{ item.discount }}</td>
+          <td>{{ item.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p class="total">Grand Total: ₹{{ order.total }}</p>
+
+    <div style="text-align:center;">
+      <a href="/products" class="btn">Continue Shopping</a>
+      <a href="/download_invoice/{{ order.order_code }}" class="btn btn-success">Download Invoice (PDF)</a>
+    </div>
+  </div>
+</body>
+</html>

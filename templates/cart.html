@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Cart</title>
+<style>
+.container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.cart-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cart-table th {
+    background: #f5f5f5;
+    padding: 10px;
+    text-align: left;
+}
+
+.cart-table td {
+    border-bottom: 1px solid #eee;
+    padding: 10px;
+    vertical-align: middle;
+}
+
+.product-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.product-info img {
+    width: 70px;
+    height: 70px;
+    border-radius: 5px;
+    object-fit: cover;
+}
+
+.quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-qty {
+    background: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.btn-qty:hover {
+    background: #0056b3;
+}
+
+.remove {
+    color: red;
+    font-size: 18px;
+    text-decoration: none;
+}
+
+.cart-summary {
+    text-align: right;
+    margin-top: 20px;
+}
+
+.btn-checkout {
+    background: #28a745;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 5px;
+    text-decoration: none;
+}
+
+.btn-checkout:hover {
+    background: #218838;
+}
+.remove-btn {
+    background: none;
+    border: none;
+    color: red;
+    font-size: 18px;
+    cursor: pointer;
+}
+.remove-btn:hover {
+    transform: scale(1.2);
+}
+.toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: #333;
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  z-index: 9999;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.toast.success { background-color: #28a745; }
+.toast.error { background-color: #dc3545; }
+
+</style>
+</head>
+<body>
+    <div class="container">
+    <h2>Your Shopping Cart</h2>
+
+    {% if cart %}
+    <table class="cart-table" id="cartTable">
+        <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Total</th>
+            <th>Action</th>
+        </tr>
+
+        {% for item in cart %}
+        <tr data-id="{{ item.id }}">
+            <td class="product-info">
+                <img src="{{ url_for('static', filename='images/' + item.image) }}" alt="{{ item.name }}">
+                <div>
+                    <strong>{{ item.name }}</strong><br>
+                    <span>Brand: {{ item.brand }}</span>
+                </div>
+            </td>
+
+   <td class="quantity-control">
+    <button class="btn-qty" onclick="updateQuantity('{{ item.id }}', 'decrease')">-</button>
+    <span class="qty">{{ item.quantity }}</span>
+    <button class="btn-qty" onclick="updateQuantity('{{ item.id }}', 'increase')">+</button>
+</td>
+
+
+<td class="price">₹ {{ item.price - (item.price * item.discount / 100) | round(2) }}</td>
+<td class="total">₹ {{ (item.price - (item.price * item.discount / 100)) * item.quantity | round(2) }}</td>
+
+<td>
+    <button class="remove-btn" onclick="removeFromCart('{{ item.id }}')">❌</button>
+</td>
+
+
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="cart-summary">
+        <h3>Total: ₹<span id="cartTotal">{{ total }}</span></h3>
+        <a href="/checkout" class="btn-checkout">Proceed to Checkout</a>
+    </div>
+
+    {% else %}
+    <p>Your cart is empty!</p>
+    {% endif %}
+</div>
+</body>
+<div id="toast-container"></div>
+
+
+
+<script>
+async function updateQuantity(productId, action) {
+    try {
+        const response = await fetch("/cart/update", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: JSON.stringify({
+                product_id: productId,
+                action: action
+            })
+        });
+
+        const data = await response.json();
+
+        // Select the corresponding row
+        const row = document.querySelector(`tr[data-id='${productId}']`);
+
+        // If product still exists in cart
+        if (data.cart.some(item => item.id === productId)) {
+            const item = data.cart.find(i => i.id === productId);
+            const qtyElement = row.querySelector(".qty");
+            const totalElement = row.querySelector(".total");
+            const priceElement = row.querySelector(".price");
+
+            const price = parseFloat(priceElement.innerText.replace("₹", "").trim());
+            qtyElement.innerText = item.quantity;
+            totalElement.innerText = "₹ " + (price * item.quantity).toFixed(2);
+        } else {
+            // If product was removed from cart
+            row.remove();
+        }
+
+        // Update total
+        document.getElementById("cartTotal").innerText = data.total;
+
+    } catch (err) {
+        console.error("Error updating cart:", err);
+    }
+}
+</script>
+<script>
+async function removeFromCart(productId) {
+    try {
+        const response = await fetch(`/remove_from_cart/${productId}`, {
+            method: "POST",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+            showToast(data.message, "success");
+
+            // remove the product row visually
+            const row = document.querySelector(`tr[data-id='${productId}']`);
+            if (row) row.remove();
+
+            // update cart total
+            if (document.getElementById("cartTotal")) {
+                document.getElementById("cartTotal").innerText = data.total.toFixed(2);
+            }
+
+            // update cart count
+            if (document.getElementById("cart-count")) {
+                document.getElementById("cart-count").innerText = data.cart_count;
+            }
+
+        } else {
+            showToast(data.message, "error");
+        }
+
+    } catch (err) {
+        console.error("Error removing item:", err);
+        showToast("Failed to remove item. Please try again.", "error");
+    }
+}
+</script>
+<script>
+function showToast(message, type = "success") {
+  // remove existing toasts
+  const existing = document.querySelector(".toast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerText = message;
+
+  document.body.appendChild(toast);
+
+  // show animation
+  setTimeout(() => toast.classList.add("show"), 100);
+
+  // auto-hide after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+</script>
